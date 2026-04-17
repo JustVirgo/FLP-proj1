@@ -155,3 +155,22 @@ filterSpecParser =
 
 -- buildFilterSpec :: ??? -> FilterSpec
 -- buildFilterSpec ???
+
+buildFilterSpec :: [String] -> [String] -> [String] ->[String] -> [String] -> [String] -> FilterSpec
+buildFilterSpec include exclude ic it ec et = FilterSpec
+  { fsIncludes = getAnyCrit include ++ getCatCrit ic ++ getTagCrit it
+  , fsExcludes = getAnyCrit exclude ++ getCatCrit ec ++ getTagCrit et
+  , fsUseRegex = False  -- Prob won't implement the extra stuff
+  }
+    where
+      getAnyCrit :: [String] -> [FilterCriterion]
+      getAnyCrit [] = [] 
+      getAnyCrit (x:xs) = ByAny x : getAnyCrit xs
+
+      getCatCrit :: [String] -> [FilterCriterion]
+      getCatCrit [] = [] 
+      getCatCrit (x:xs) = ByCategory x : getCatCrit xs
+
+      getTagCrit :: [String] -> [FilterCriterion]
+      getTagCrit [] = []
+      getTagCrit (x:xs) = ByTag x : getTagCrit xs

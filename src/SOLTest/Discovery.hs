@@ -6,7 +6,7 @@ import System.Directory
   ( doesFileExist,
     listDirectory,
   )
-import System.FilePath (replaceExtension, takeBaseName, (</>))
+import System.FilePath (replaceExtension, takeBaseName, (</>), takeExtension)
 
 -- | Discover all @.test@ files in a directory.
 --
@@ -18,11 +18,15 @@ import System.FilePath (replaceExtension, takeBaseName, (</>))
 --      @doesDirectoryExist@, @takeExtension@, @forM@ or @mapM@,
 --      @findCompanionFiles@ (below).
 discoverTests :: Bool -> FilePath -> IO [TestCaseFile]
-discoverTests recursive dir = do
+discoverTests recursive dir = do --TODO implement recursion
   entries <- listDirectory dir
   let fullPaths = map (dir </>) entries
-  -- ???
-  return [] -- replace [] with your list of discovered TestCaseFile
+  --let recursedPaths = if recursive then  else fullPaths
+  let testFiles = filter (\f -> takeExtension f == ".test") fullPaths
+  mapM findCompanionFiles testFiles
+    
+  --TODO idk if I need to use this return or I can delete it
+  --return list -- replace [] with your list of discovered TestCaseFile
 
 -- | Build a 'TestCaseFile' for a given @.test@ file path, checking for
 -- companion @.in@ and @.out@ files in the same directory.

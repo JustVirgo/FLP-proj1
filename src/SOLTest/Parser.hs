@@ -78,7 +78,15 @@ emptyHeader =
 --
 -- FLP: Implement this function.
 splitHeaderBody :: String -> ([String], String)
-splitHeaderBody content = undefined
+splitHeaderBody content = (getHead (lines content), getBody (lines content))
+  where 
+    getHead :: [String] -> [String]
+    getHead [] = []
+    getHead (c:cs) = if all isSpace c then [] else c : getHead cs
+
+    getBody :: [String] -> String
+    getBody [] = []
+    getBody (c:cs) = if all isSpace c then unlines cs else getBody cs
 
 -- ---------------------------------------------------------------------------
 -- Header line parsing
@@ -190,7 +198,12 @@ parseTestFile tcf content = do
 --
 -- FLP: Implement this function.
 buildExitCodes :: TestCaseType -> ParsedHeader -> (Maybe [Int], Maybe [Int])
-buildExitCodes = undefined
+buildExitCodes t p =  case t of
+    ParseOnly -> (Just (phParserCodes p),  Nothing)
+    ExecuteOnly -> (Nothing,  Just (phInterpreterCodes p))
+    Combined -> if null (phParserCodes p) then (Nothing, Just (phInterpreterCodes p)) else (Just (phParserCodes p), Just (phInterpreterCodes p)) 
+        --TODO case where phInterpreterCodes is also null??? 
+
 
 -- ---------------------------------------------------------------------------
 -- Utilities

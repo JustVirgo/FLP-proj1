@@ -111,7 +111,7 @@ parseHeaderLine hdr line
        in Right hdr {phCategory = Just val}
   | "--- " `isPrefixOf` line =
       let val = words (trim (drop 4 line))
-       in Right hdr {phTags = val}
+       in Right hdr {phTags = phTags hdr ++ val}
   | ">>> " `isPrefixOf` line =
       let val = (readMaybe (trim (drop 4 line)) :: Maybe Int)
        in case val of 
@@ -130,7 +130,7 @@ parseHeaderLine hdr line
         check s = readMaybe s :: Maybe Int
         checkAndConvert :: String -> Int
         checkAndConvert s = fromMaybe 0 (readMaybe s :: Maybe Int)
-       in if Nothing `elem` map check val then Left "Invalid interpret code value" else Right hdr {phInterpreterCodes = map checkAndConvert val}
+       in if Nothing `elem` map check val then Left "Invalid interpret code value" else Right hdr {phInterpreterCodes = phInterpreterCodes hdr ++ map checkAndConvert val}
   
           
           

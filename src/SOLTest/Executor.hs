@@ -18,7 +18,7 @@ where
 import Control.Exception (IOException, try)
 import Data.Maybe (fromMaybe)
 import SOLTest.Types
-import System.Directory (doesFileExist, getPermissions, Permissions (executable))
+import System.Directory (Permissions (executable), doesFileExist, getPermissions)
 import System.Exit (ExitCode (..))
 import System.IO (hClose, hPutStr)
 import System.IO.Temp (withSystemTempFile)
@@ -108,36 +108,35 @@ executeCombined parserPath interpPath test = do
         | pcode `elem` pexpectedCodes = Passed
         | otherwise = ParseFail
       pexpectedCodes = fromMaybe [] (tcdExpectedParserExitCodes test)
-  if presult == Passed then
-    withTempSource (tcdSourceCode test) $ \tmpPath -> do
-    (iexitCode, iOut, iErr) <- runInterpreter interpPath tmpPath (tcdStdinFile test)
-    let icode = exitCodeToInt iexitCode
-        iexpectedCodes = fromMaybe [] (tcdExpectedInterpreterExitCodes test)
-    (iresult, diffOut) <- checkInterpreterResult icode iexpectedCodes iOut (tcdExpectedStdoutFile test)
-    return 
-      TestCaseReport
-        { tcrResult = iresult,
-          tcrParserExitCode = Just pcode,
-          tcrInterpreterExitCode = Just icode,
-          tcrParserStdout = Just pOut,
-          tcrParserStderr = Just pErr,
-          tcrInterpreterStdout = Just iOut,
-          tcrInterpreterStderr = Just iErr,
-          tcrDiffOutput = diffOut
-        }
-  else 
-    return
-    TestCaseReport
-      { tcrResult = presult,
-        tcrParserExitCode = Just pcode,
-        tcrInterpreterExitCode = Nothing,
-        tcrParserStdout = Just pOut,
-        tcrParserStderr = Just pErr,
-        tcrInterpreterStdout = Nothing,
-        tcrInterpreterStderr = Nothing,
-        tcrDiffOutput = Nothing
-      }
-  
+  if presult == Passed
+    then withTempSource (tcdSourceCode test) $ \tmpPath -> do
+      (iexitCode, iOut, iErr) <- runInterpreter interpPath tmpPath (tcdStdinFile test)
+      let icode = exitCodeToInt iexitCode
+          iexpectedCodes = fromMaybe [] (tcdExpectedInterpreterExitCodes test)
+      (iresult, diffOut) <- checkInterpreterResult icode iexpectedCodes iOut (tcdExpectedStdoutFile test)
+      return
+        TestCaseReport
+          { tcrResult = iresult,
+            tcrParserExitCode = Just pcode,
+            tcrInterpreterExitCode = Just icode,
+            tcrParserStdout = Just pOut,
+            tcrParserStderr = Just pErr,
+            tcrInterpreterStdout = Just iOut,
+            tcrInterpreterStderr = Just iErr,
+            tcrDiffOutput = diffOut
+          }
+    else
+      return
+        TestCaseReport
+          { tcrResult = presult,
+            tcrParserExitCode = Just pcode,
+            tcrInterpreterExitCode = Nothing,
+            tcrParserStdout = Just pOut,
+            tcrParserStderr = Just pErr,
+            tcrInterpreterStdout = Nothing,
+            tcrInterpreterStderr = Nothing,
+            tcrDiffOutput = Nothing
+          }
 
 -- ---------------------------------------------------------------------------
 -- Process wrappers
@@ -192,9 +191,10 @@ checkInterpreterResult ::
   Maybe FilePath ->
   IO (TestResult, Maybe String)
 checkInterpreterResult actualCode expectedCodes iOut mOutFile =
-    if actualCode `elem` expectedCodes then 
-      if actualCode == 0 then 
-        case mOutFile of 
+  if actualCode `elem` expectedCodes
+    then
+      if actualCode == 0
+        then case mOutFile of
           Nothing -> return (Passed, Just "Failed successfully")
           Just path -> runDiffOnOutput iOut path
         else return (Passed, Just "Failed successfully")
@@ -214,11 +214,11 @@ withTempSource content action =
 --
 -- FLP: Implement this function. It will start similarly to @withTempSource@.
 runDiffOnOutput :: String -> FilePath -> IO (TestResult, Maybe String)
-runDiffOnOutput iOut outFile = 
+runDiffOnOutput iOut outFile =
   withSystemTempFile "stdout-temp.out" $ \tmpPath tmpHandle -> do
     hPutStr tmpHandle iOut
     hClose tmpHandle
-    (exitCode,reason) <- runDiff tmpPath outFile
+    (exitCode, reason) <- runDiff tmpPath outFile
     if exitCodeToInt exitCode == 0 then return (Passed, Nothing) else return (DiffFail, Just reason)
 
 -- | Ensure an executable path is provided and the file is executable,

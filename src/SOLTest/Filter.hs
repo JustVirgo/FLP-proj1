@@ -16,8 +16,8 @@ module SOLTest.Filter
 where
 
 import Data.Char (isSpace)
-import SOLTest.Types
 import Data.List (partition)
+import SOLTest.Types
 
 -- ---------------------------------------------------------------------------
 -- Public API
@@ -40,16 +40,15 @@ filterTests ::
 filterTests spec tests = partition selected tests
   where
     include :: TestCaseDefinition -> Bool
-    include t = 
+    include t =
       null (fsIncludes spec)
-      || matchesAny (fsUseRegex spec) (fsIncludes spec) t
+        || matchesAny (fsUseRegex spec) (fsIncludes spec) t
 
     exclude :: TestCaseDefinition -> Bool
     exclude = matchesAny (fsUseRegex spec) (fsExcludes spec)
 
     selected :: TestCaseDefinition -> Bool
     selected t = include t && not (exclude t)
-  
 
 -- | Check whether a test matches at least one criterion in the list.
 matchesAny :: Bool -> [FilterCriterion] -> TestCaseDefinition -> Bool
@@ -67,11 +66,10 @@ matchesAny useRegex criteria test =
 -- or you can simply ignore the value.
 matchesCriterion :: Bool -> TestCaseDefinition -> FilterCriterion -> Bool
 matchesCriterion useRegex test criterion = a criterion
-  where 
+  where
     a (ByAny anyThing) = tcdName test == trimFilterId anyThing || elem anyThing (tcdTags test) || tcdCategory test == trimFilterId anyThing
     a (ByCategory cat) = tcdCategory test == trimFilterId cat
     a (ByTag tag) = trimFilterId tag `elem` tcdTags test
-
 
 -- | Trim leading and trailing whitespace from a filter identifier.
 trimFilterId :: String -> String

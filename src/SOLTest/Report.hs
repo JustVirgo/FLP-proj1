@@ -14,8 +14,8 @@ where
 
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
-import SOLTest.Types
 import Data.Maybe (fromMaybe)
+import SOLTest.Types
 
 -- ---------------------------------------------------------------------------
 -- Top-level report assembly
@@ -68,28 +68,32 @@ groupByCategory definitions results = Map.fromListWith combine (map toEntry defi
   where
     getPassedPoints :: TestCaseDefinition -> Map String TestCaseReport -> Int
     getPassedPoints d res = case Map.lookup (tcdName d) res of
-        Just report | tcrResult report == Passed -> tcdPoints d
-        _                                        -> 0
+      Just report | tcrResult report == Passed -> tcdPoints d
+      _ -> 0
 
     getTestResult :: TestCaseDefinition -> Map String TestCaseReport -> Maybe TestCaseReport
-    getTestResult d res = Map.lookup (tcdName d) res 
+    getTestResult d res = Map.lookup (tcdName d) res
 
-    toEntry def = (tcdCategory def, CategoryReport { 
-      crTotalPoints = tcdPoints def, 
-      crPassedPoints = getPassedPoints def results, 
-      crTestResults = case getTestResult def results of
-        Just r -> Map.fromList [(tcdName def, r)]
-        Nothing -> Map.empty
-      })  
-    
+    toEntry def =
+      ( tcdCategory def,
+        CategoryReport
+          { crTotalPoints = tcdPoints def,
+            crPassedPoints = getPassedPoints def results,
+            crTestResults = case getTestResult def results of
+              Just r -> Map.fromList [(tcdName def, r)]
+              Nothing -> Map.empty
+          }
+      )
+
     -- zoskupí tie, čo majú rovnakú kategóriu
-    combine r1 r2 = CategoryReport {
-      crTotalPoints = crTotalPoints r1 + crTotalPoints r2,
-      crPassedPoints = crPassedPoints r1 + crPassedPoints r2,
-      crTestResults  = Map.union (crTestResults r1) (crTestResults r2)
-    }
-  
-  -- Map.insert (tcdCategory (head definitions)) CategoryReport { crTotalPoints = 0, crPassedPoints = 0, crTestResults = Map.empty } Map.empty
+    combine r1 r2 =
+      CategoryReport
+        { crTotalPoints = crTotalPoints r1 + crTotalPoints r2,
+          crPassedPoints = crPassedPoints r1 + crPassedPoints r2,
+          crTestResults = Map.union (crTestResults r1) (crTestResults r2)
+        }
+
+-- Map.insert (tcdCategory (head definitions)) CategoryReport { crTotalPoints = 0, crPassedPoints = 0, crTestResults = Map.empty } Map.empty
 
 -- ---------------------------------------------------------------------------
 -- Statistics
@@ -108,21 +112,29 @@ computeStats ::
   -- | Category reports (Nothing in dry-run mode).
   Maybe (Map String CategoryReport) ->
   TestStats
-computeStats foundCount loadedCount selectedCount mCategoryResults = TestStats {
-    tsFoundTestFiles = foundCount,
-    tsLoadedTests = loadedCount,
-    tsSelectedTests = selectedCount,
-    tsPassedTests = getPassedTests mCategoryResults, -- CategoryReport -> TestCaseReport -> TestResult if Passed then + 1 
-    tsHistogram = computeHistogram (fromMaybe Map.empty mCategoryResults)
-}
-  where 
+computeStats foundCount loadedCount selectedCount mCategoryResults =
+  TestStats
+    { tsFoundTestFiles = foundCount,
+      tsLoadedTests = loadedCount,
+      tsSelectedTests = selectedCount,
+      tsPassedTests = getPassedTests mCategoryResults, -- CategoryReport -> TestCaseReport -> TestResult if Passed then + 1
+      tsHistogram = computeHistogram (fromMaybe Map.empty mCategoryResults)
+    }
+  where
     getPassedTests :: Maybe (Map String CategoryReport) -> Int
-    getPassedTests c = case c of 
+    getPassedTests c = case c of
       Nothing -> 0
-      Just a -> Map.foldlWithKey' 
-        (\acc _ report -> acc + Map.foldlWithKey' 
-          (\acc2 _ res -> acc2 + if tcrResult res == Passed then 1 else 0) 
-            0 (crTestResults report)) 0 a
+      Just a ->
+        Map.foldlWithKey'
+          ( \acc _ report ->
+              acc
+                + Map.foldlWithKey'
+                  (\acc2 _ res -> acc2 + if tcrResult res == Passed then 1 else 0)
+                  0
+                  (crTestResults report)
+          )
+          0
+          a
 
 -- ---------------------------------------------------------------------------
 -- Histogram
@@ -141,22 +153,18 @@ computeStats foundCount loadedCount selectedCount mCategoryResults = TestStats {
 -- FLP: Implement this function.
 computeHistogram :: Map String CategoryReport -> Map String Int
 computeHistogram categories = Map.foldlWithKey' updateHistogram mapWithBins categories
-  where 
+  where
     mapWithBins :: Map String Int
-    mapWithBins = Map.fromList [("0.0", 0),("0.1", 0),("0.2", 0),("0.3", 0),("0.4", 0),("0.5", 0),("0.6", 0),("0.7", 0),("0.8", 0),("0.9", 0)]
+    mapWithBins = Map.fromList [("0.0", 0), ("0.1", 0), ("0.2", 0), ("0.3", 0), ("0.4", 0), ("0.5", 0), ("0.6", 0), ("0.7", 0), ("0.8", 0), ("0.9", 0)]
 
     updateHistogram :: Map String Int -> String -> CategoryReport -> Map String Int
-    updateHistogram acc _ report = 
-      let 
-        total = fromIntegral (crTotalPoints report)
-        passed = fromIntegral (crPassedPoints report)
-        
-        rate = if total == 0 then 0 else passed / total
-        bin = rateToBin rate
-      in 
-        Map.insertWith (+) bin 1 acc
+    updateHistogram acc _ report =
+      let total = fromIntegral (crTotalPoints report)
+          passed = fromIntegral (crPassedPoints report)
 
-
+          rate = if total == 0 then 0 else passed / total
+          bin = rateToBin rate
+       in Map.insertWith (+) bin 1 acc
 
 -- | Map a pass rate in @[0, 1]@ to a histogram bin key.
 --

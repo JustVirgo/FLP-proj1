@@ -16,6 +16,7 @@ where
 
 import Data.Char (isSpace)
 import Data.List (isPrefixOf)
+import Data.Maybe (fromMaybe)
 import SOLTest.Types
   ( TestCaseDefinition (..),
     TestCaseFile
@@ -26,7 +27,6 @@ import SOLTest.Types
       ),
     TestCaseType (..),
   )
-import Data.Maybe (fromMaybe)
 import Text.Read (readMaybe)
 
 -- ---------------------------------------------------------------------------
@@ -81,14 +81,14 @@ emptyHeader =
 -- FLP: Implement this function.
 splitHeaderBody :: String -> ([String], String)
 splitHeaderBody content = (getHead (lines content), getBody (lines content))
-  where 
+  where
     getHead :: [String] -> [String]
     getHead [] = []
-    getHead (c:cs) = if all isSpace c then [] else c : getHead cs
+    getHead (c : cs) = if all isSpace c then [] else c : getHead cs
 
     getBody :: [String] -> String
     getBody [] = []
-    getBody (c:cs) = if all isSpace c then unlines cs else getBody cs
+    getBody (c : cs) = if all isSpace c then unlines cs else getBody cs
 
 -- ---------------------------------------------------------------------------
 -- Header line parsing
@@ -114,26 +114,23 @@ parseHeaderLine hdr line
        in Right hdr {phTags = phTags hdr ++ val}
   | ">>> " `isPrefixOf` line =
       let val = (readMaybe (trim (drop 4 line)) :: Maybe Int)
-       in case val of 
-        Nothing -> Left "Invalid weight value"
-        Just _ -> Right hdr {phWeight = val}
+       in case val of
+            Nothing -> Left "Invalid weight value"
+            Just _ -> Right hdr {phWeight = val}
   | "!C! " `isPrefixOf` line =
-    let val = words (trim (drop 4 line))
-        check :: String -> Maybe Int 
-        check s = readMaybe s :: Maybe Int
-        checkAndConvert :: String -> Int
-        checkAndConvert s = fromMaybe 0 (readMaybe s :: Maybe Int)
+      let val = words (trim (drop 4 line))
+          check :: String -> Maybe Int
+          check s = readMaybe s :: Maybe Int
+          checkAndConvert :: String -> Int
+          checkAndConvert s = fromMaybe 0 (readMaybe s :: Maybe Int)
        in if Nothing `elem` map check val then Left "Invalid parser code value" else Right hdr {phParserCodes = map checkAndConvert val}
   | "!I! " `isPrefixOf` line =
-    let val = words (trim (drop 4 line))
-        check :: String -> Maybe Int 
-        check s = readMaybe s :: Maybe Int
-        checkAndConvert :: String -> Int
-        checkAndConvert s = fromMaybe 0 (readMaybe s :: Maybe Int)
+      let val = words (trim (drop 4 line))
+          check :: String -> Maybe Int
+          check s = readMaybe s :: Maybe Int
+          checkAndConvert :: String -> Int
+          checkAndConvert s = fromMaybe 0 (readMaybe s :: Maybe Int)
        in if Nothing `elem` map check val then Left "Invalid interpret code value" else Right hdr {phInterpreterCodes = phInterpreterCodes hdr ++ map checkAndConvert val}
-  
-          
-          
   | otherwise = Right hdr -- unknown or commeknt line: skip
 
 -- | Parse all header lines into a 'ParsedHeader'.
@@ -227,11 +224,10 @@ parseTestFile tcf content = do
 --
 -- FLP: Implement this function.
 buildExitCodes :: TestCaseType -> ParsedHeader -> (Maybe [Int], Maybe [Int])
-buildExitCodes t p =  case t of
-    ParseOnly -> (Just (phParserCodes p),  Nothing)
-    ExecuteOnly -> (Nothing,  Just (phInterpreterCodes p))
-    Combined -> if null (phParserCodes p) then (Nothing, Just (phInterpreterCodes p)) else (Just (phParserCodes p), Just (phInterpreterCodes p)) 
-
+buildExitCodes t p = case t of
+  ParseOnly -> (Just (phParserCodes p), Nothing)
+  ExecuteOnly -> (Nothing, Just (phInterpreterCodes p))
+  Combined -> if null (phParserCodes p) then (Nothing, Just (phInterpreterCodes p)) else (Just (phParserCodes p), Just (phInterpreterCodes p))
 
 -- ---------------------------------------------------------------------------
 -- Utilities

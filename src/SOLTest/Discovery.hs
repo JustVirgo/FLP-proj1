@@ -19,7 +19,7 @@ import Control.Monad (filterM)
 --      @doesDirectoryExist@, @takeExtension@, @forM@ or @mapM@,
 --      @findCompanionFiles@ (below).
 discoverTests :: Bool -> FilePath -> IO [TestCaseFile]
-discoverTests recursive dir = do --TODO implement recursion
+discoverTests recursive dir = do
   entries <- listDirectory dir
   let fullPaths = map (dir </>) entries
   let testFiles = filter (\f -> takeExtension f == ".test") fullPaths

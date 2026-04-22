@@ -231,7 +231,6 @@ buildExitCodes t p =  case t of
     ParseOnly -> (Just (phParserCodes p),  Nothing)
     ExecuteOnly -> (Nothing,  Just (phInterpreterCodes p))
     Combined -> if null (phParserCodes p) then (Nothing, Just (phInterpreterCodes p)) else (Just (phParserCodes p), Just (phInterpreterCodes p)) 
-        --TODO case where phInterpreterCodes is also null??? 
 
 
 -- ---------------------------------------------------------------------------

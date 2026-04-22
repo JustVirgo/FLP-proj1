@@ -15,7 +15,7 @@ where
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
 import SOLTest.Types
-import Data.Maybe (fromMaybe) --TODO idk if we can use this
+import Data.Maybe (fromMaybe)
 
 -- ---------------------------------------------------------------------------
 -- Top-level report assembly

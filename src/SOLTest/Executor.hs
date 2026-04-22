@@ -254,7 +254,7 @@ checkExecutable path = do
   perms <- getPermissions path
   case result of
     Left err -> return (Just (UnexecutedReason CannotExecute (Just (show err))))
-    Right False -> return (Just (UnexecutedReason CannotExecute (Just (show "Unable to locate executable")))) --TODO maybe should be Malformedtestcase??
+    Right False -> return (Just (UnexecutedReason CannotExecute (Just (show "Unable to locate executable"))))
     Right True -> if executable perms then return Nothing else return (Just (UnexecutedReason CannotExecute (Just (show "Unable to execute specified file"))))
 
 -- | Convert 'ExitCode' to an 'Int'.

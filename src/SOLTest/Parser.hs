@@ -26,6 +26,8 @@ import SOLTest.Types
       ),
     TestCaseType (..),
   )
+import Data.Maybe (fromMaybe)
+import Text.Read (readMaybe)
 
 -- ---------------------------------------------------------------------------
 -- Intermediate header type
@@ -104,8 +106,35 @@ parseHeaderLine hdr line
   | "*** " `isPrefixOf` line =
       let val = trim (drop 4 line)
        in Right hdr {phDescription = Just val}
-  -- ???
-  | otherwise = Right hdr -- unknown or comment line: skip
+  | "+++ " `isPrefixOf` line =
+      let val = trim (drop 4 line)
+       in Right hdr {phCategory = Just val}
+  | "--- " `isPrefixOf` line =
+      let val = words (trim (drop 4 line))
+       in Right hdr {phTags = val}
+  | ">>> " `isPrefixOf` line =
+      let val = (readMaybe (trim (drop 4 line)) :: Maybe Int)
+       in case val of 
+        Nothing -> Left "Invalid weight value"
+        Just _ -> Right hdr {phWeight = val}
+  | "!C! " `isPrefixOf` line =
+    let val = words (trim (drop 4 line))
+        check :: String -> Maybe Int 
+        check s = readMaybe s :: Maybe Int
+        checkAndConvert :: String -> Int
+        checkAndConvert s = fromMaybe 0 (readMaybe s :: Maybe Int)
+       in if Nothing `elem` map check val then Left "Invalid parser code value" else Right hdr {phParserCodes = map checkAndConvert val}
+  | "!I! " `isPrefixOf` line =
+    let val = words (trim (drop 4 line))
+        check :: String -> Maybe Int 
+        check s = readMaybe s :: Maybe Int
+        checkAndConvert :: String -> Int
+        checkAndConvert s = fromMaybe 0 (readMaybe s :: Maybe Int)
+       in if Nothing `elem` map check val then Left "Invalid interpret code value" else Right hdr {phInterpreterCodes = map checkAndConvert val}
+  
+          
+          
+  | otherwise = Right hdr -- unknown or commeknt line: skip
 
 -- | Parse all header lines into a 'ParsedHeader'.
 --

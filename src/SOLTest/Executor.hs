@@ -18,7 +18,7 @@ where
 import Control.Exception (IOException, try)
 import Data.Maybe (fromMaybe)
 import SOLTest.Types
-import System.Directory (doesFileExist)
+import System.Directory (doesFileExist, getPermissions, Permissions (executable))
 import System.Exit (ExitCode (..))
 import System.IO (hClose, hPutStr)
 import System.IO.Temp (withSystemTempFile)
@@ -102,8 +102,42 @@ executeExecuteOnly interpPath test =
 -- FLP: Implement this function. You'll use @withTempSource@ here.
 executeCombined :: FilePath -> FilePath -> TestCaseDefinition -> IO TestCaseReport
 executeCombined parserPath interpPath test = do
-  -- ?
-  return undefined
+  (pexitCode, pOut, pErr) <- runParser parserPath (tcdSourceCode test)
+  let pcode = exitCodeToInt pexitCode
+      presult
+        | pcode `elem` pexpectedCodes = Passed
+        | otherwise = ParseFail
+      pexpectedCodes = fromMaybe [] (tcdExpectedParserExitCodes test)
+  if presult == Passed then
+    withTempSource (tcdSourceCode test) $ \tmpPath -> do
+    (iexitCode, iOut, iErr) <- runInterpreter interpPath tmpPath (tcdStdinFile test)
+    let icode = exitCodeToInt iexitCode
+        iexpectedCodes = fromMaybe [] (tcdExpectedInterpreterExitCodes test)
+    (iresult, diffOut) <- checkInterpreterResult icode iexpectedCodes iOut (tcdExpectedStdoutFile test)
+    return 
+      TestCaseReport
+        { tcrResult = iresult,
+          tcrParserExitCode = Just pcode,
+          tcrInterpreterExitCode = Just icode,
+          tcrParserStdout = Just pOut,
+          tcrParserStderr = Just pErr,
+          tcrInterpreterStdout = Just iOut,
+          tcrInterpreterStderr = Just iErr,
+          tcrDiffOutput = diffOut
+        }
+  else 
+    return
+    TestCaseReport
+      { tcrResult = presult,
+        tcrParserExitCode = Just pcode,
+        tcrInterpreterExitCode = Nothing,
+        tcrParserStdout = Just pOut,
+        tcrParserStderr = Just pErr,
+        tcrInterpreterStdout = Nothing,
+        tcrInterpreterStderr = Nothing,
+        tcrDiffOutput = Nothing
+      }
+  
 
 -- ---------------------------------------------------------------------------
 -- Process wrappers
@@ -157,7 +191,14 @@ checkInterpreterResult ::
   -- | Path to the @.out@ file, if present.
   Maybe FilePath ->
   IO (TestResult, Maybe String)
-checkInterpreterResult actualCode expectedCodes iOut mOutFile = undefined
+checkInterpreterResult actualCode expectedCodes iOut mOutFile =
+    if actualCode `elem` expectedCodes then 
+      if actualCode == 0 then 
+        case mOutFile of 
+          Nothing -> return (Passed, Just "Failed successfully")
+          Just path -> runDiffOnOutput iOut path
+        else return (Passed, Just "Failed successfully")
+    else return (IntFail, Just iOut)
 
 -- | Write a string to a temporary file and pass its path to an action.
 -- The file is deleted when the action returns.
@@ -173,7 +214,12 @@ withTempSource content action =
 --
 -- FLP: Implement this function. It will start similarly to @withTempSource@.
 runDiffOnOutput :: String -> FilePath -> IO (TestResult, Maybe String)
-runDiffOnOutput iOut outFile = undefined
+runDiffOnOutput iOut outFile = 
+  withSystemTempFile "stdout-temp.out" $ \tmpPath tmpHandle -> do
+    hPutStr tmpHandle iOut
+    hClose tmpHandle
+    (exitCode,reason) <- runDiff tmpPath outFile
+    if exitCodeToInt exitCode == 0 then return (Passed, Nothing) else return (DiffFail, Just reason)
 
 -- | Ensure an executable path is provided and the file is executable,
 -- then run an action with it.  Returns 'Left' 'CannotExecute' if the
@@ -205,11 +251,11 @@ withExecutable (Just path) action = do
 checkExecutable :: FilePath -> IO (Maybe UnexecutedReason)
 checkExecutable path = do
   result <- try (doesFileExist path) :: IO (Either IOException Bool)
+  perms <- getPermissions path
   case result of
     Left err -> return (Just (UnexecutedReason CannotExecute (Just (show err))))
-    Right False -> undefined -- ???
-    Right True -> undefined -- ???
-  return Nothing -- this probably won't be here
+    Right False -> return (Just (UnexecutedReason CannotExecute (Just (show "Unable to locate executable")))) --TODO maybe should be Malformedtestcase??
+    Right True -> if executable perms then return Nothing else return (Just (UnexecutedReason CannotExecute (Just (show "Unable to execute specified file"))))
 
 -- | Convert 'ExitCode' to an 'Int'.
 exitCodeToInt :: ExitCode -> Int

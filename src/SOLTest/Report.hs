@@ -112,9 +112,17 @@ computeStats foundCount loadedCount selectedCount mCategoryResults = TestStats {
     tsFoundTestFiles = foundCount,
     tsLoadedTests = loadedCount,
     tsSelectedTests = selectedCount,
-    tsPassedTests = 0, --TODO IDK how to calculate this
+    tsPassedTests = getPassedTests mCategoryResults, -- CategoryReport -> TestCaseReport -> TestResult if Passed then + 1 
     tsHistogram = computeHistogram (fromMaybe Map.empty mCategoryResults)
 }
+  where 
+    getPassedTests :: Maybe (Map String CategoryReport) -> Int
+    getPassedTests c = case c of 
+      Nothing -> 0
+      Just a -> Map.foldlWithKey' 
+        (\acc _ report -> acc + Map.foldlWithKey' 
+          (\acc2 _ res -> acc2 + if tcrResult res == Passed then 1 else 0) 
+            0 (crTestResults report)) 0 a
 
 -- ---------------------------------------------------------------------------
 -- Histogram
@@ -135,7 +143,7 @@ computeHistogram :: Map String CategoryReport -> Map String Int
 computeHistogram categories = Map.foldlWithKey' updateHistogram mapWithBins categories
   where 
     mapWithBins :: Map String Int
-    mapWithBins = Map.fromList [("0.0", 0),("0.2", 0),("0.3", 0),("0.4", 0),("0.5", 0),("0.6", 0),("0.7", 0),("0.8", 0),("0.9", 0),("1", 0)]
+    mapWithBins = Map.fromList [("0.0", 0),("0.1", 0),("0.2", 0),("0.3", 0),("0.4", 0),("0.5", 0),("0.6", 0),("0.7", 0),("0.8", 0),("0.9", 0)]
 
     updateHistogram :: Map String Int -> String -> CategoryReport -> Map String Int
     updateHistogram acc _ report = 

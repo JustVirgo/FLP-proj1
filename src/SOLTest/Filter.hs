@@ -65,11 +65,12 @@ matchesAny useRegex criteria test =
 -- bonus extension, you can either remove the first argument and update the usages,
 -- or you can simply ignore the value.
 matchesCriterion :: Bool -> TestCaseDefinition -> FilterCriterion -> Bool
-matchesCriterion useRegex test criterion = a criterion
+matchesCriterion useRegex test criterion = a useRegex criterion
   where
-    a (ByAny anyThing) = tcdName test == trimFilterId anyThing || elem anyThing (tcdTags test) || tcdCategory test == trimFilterId anyThing
-    a (ByCategory cat) = tcdCategory test == trimFilterId cat
-    a (ByTag tag) = trimFilterId tag `elem` tcdTags test
+    a :: Bool -> FilterCriterion -> Bool
+    a _ (ByAny anyThing) = tcdName test == trimFilterId anyThing || elem anyThing (tcdTags test) || tcdCategory test == trimFilterId anyThing
+    a _ (ByCategory cat) = tcdCategory test == trimFilterId cat
+    a _ (ByTag tag) = trimFilterId tag `elem` tcdTags test
 
 -- | Trim leading and trailing whitespace from a filter identifier.
 trimFilterId :: String -> String

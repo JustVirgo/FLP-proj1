@@ -17,6 +17,7 @@ where
 
 import Data.Char (isSpace)
 import SOLTest.Types
+import Data.List (partition)
 
 -- ---------------------------------------------------------------------------
 -- Public API
@@ -36,24 +37,19 @@ filterTests ::
   FilterSpec ->
   [TestCaseDefinition] ->
   ([TestCaseDefinition], [TestCaseDefinition])
-filterTests spec tests = (selected spec tests, filteredOut (selected spec tests) tests)
-  where 
-    include :: [FilterCriterion] -> [TestCaseDefinition] -> [TestCaseDefinition]
-    include _ [] = []
-    include [] t = t
-    include incs (x:xs) = if matchesAny False incs x then x : include incs xs else include incs xs
+filterTests spec tests = partition selected tests
+  where
+    include :: TestCaseDefinition -> Bool
+    include t = 
+      null (fsIncludes spec)
+      || matchesAny (fsUseRegex spec) (fsIncludes spec) t
 
-    exclude :: [FilterCriterion] -> [TestCaseDefinition] -> [TestCaseDefinition]
-    exclude _ [] = []
-    exclude [] _ = []
-    exclude excs (x:xs) = if matchesAny False excs x then x : exclude excs xs else exclude excs xs
+    exclude :: TestCaseDefinition -> Bool
+    exclude = matchesAny (fsUseRegex spec) (fsExcludes spec)
 
-    selected :: FilterSpec -> [TestCaseDefinition] -> [TestCaseDefinition]
-    selected (FilterSpec incs excs _) t = exclude excs (include incs t)
-
-    filteredOut :: [TestCaseDefinition] -> [TestCaseDefinition] -> [TestCaseDefinition]
-    filteredOut [] t = t
-    filteredOut (sel:sels) ts = if sel `notElem` ts then sel : filteredOut sels ts else filteredOut sels ts
+    selected :: TestCaseDefinition -> Bool
+    selected t = include t && not (exclude t)
+  
 
 -- | Check whether a test matches at least one criterion in the list.
 matchesAny :: Bool -> [FilterCriterion] -> TestCaseDefinition -> Bool
@@ -72,9 +68,9 @@ matchesAny useRegex criteria test =
 matchesCriterion :: Bool -> TestCaseDefinition -> FilterCriterion -> Bool
 matchesCriterion useRegex test criterion = a criterion
   where 
-    a (ByAny anyThing) = tcdName test == anyThing || elem anyThing (tcdTags test) || tcdCategory test == anyThing
-    a (ByCategory cat) = tcdCategory test == cat
-    a (ByTag tag) = tag `elem` tcdTags test
+    a (ByAny anyThing) = tcdName test == trimFilterId anyThing || elem anyThing (tcdTags test) || tcdCategory test == trimFilterId anyThing
+    a (ByCategory cat) = tcdCategory test == trimFilterId cat
+    a (ByTag tag) = trimFilterId tag `elem` tcdTags test
 
 
 -- | Trim leading and trailing whitespace from a filter identifier.

@@ -16,9 +16,7 @@ import System.FilePath (replaceExtension, takeBaseName, takeExtension, (</>))
 -- Returns a list of 'TestCaseFile' records, one per @.test@ file found.
 -- The list is ordered by the file system traversal order (not sorted).
 --
--- FLP: Implement this function. The following functions may come in handy:
---      @doesDirectoryExist@, @takeExtension@, @forM@ or @mapM@,
---      @findCompanionFiles@ (below).
+-- The hardest part was implementing the recursion. Once I found out about the existence of @mapM@, it was easier.
 discoverTests :: Bool -> FilePath -> IO [TestCaseFile]
 discoverTests recursive dir = do
   entries <- listDirectory dir

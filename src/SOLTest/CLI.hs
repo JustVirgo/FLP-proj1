@@ -151,17 +151,13 @@ filterSpecParser =
 
 -- | Assemble raw filter string lists into a 'FilterSpec'.
 --
--- FLP: Implement this function (read the long comment above first).
-
--- buildFilterSpec :: ??? -> FilterSpec
--- buildFilterSpec ???
-
+-- The input consists of arguments in the format of [String], and the output is a filled FilterSpec type.
 buildFilterSpec :: [String] -> [String] -> [String] -> [String] -> [String] -> [String] -> FilterSpec
 buildFilterSpec include exclude ic it ec et =
   FilterSpec
     { fsIncludes = getAnyCrit include ++ getCatCrit ic ++ getTagCrit it,
       fsExcludes = getAnyCrit exclude ++ getCatCrit ec ++ getTagCrit et,
-      fsUseRegex = False -- Prob won't implement the extra stuff
+      fsUseRegex = False -- Won't implement the extra stuff
     }
   where
     getAnyCrit :: [String] -> [FilterCriterion]

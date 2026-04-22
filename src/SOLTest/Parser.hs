@@ -78,7 +78,10 @@ emptyHeader =
 -- If there is no empty line, all lines are treated as header lines and the
 -- body is empty.
 --
--- FLP: Implement this function.
+-- Working with files in Haskell was scary at first.
+-- Then I figured out it's just a String, so it was simple.
+-- Love the fact that @unlines@ exists; I was scared about what the hell I was supposed to do before that.
+-- getBody = 7 (hopefully)
 splitHeaderBody :: String -> ([String], String)
 splitHeaderBody content = (getHead (lines content), getBody (lines content))
   where
@@ -100,7 +103,8 @@ splitHeaderBody content = (getHead (lines content), getBody (lines content))
 -- a malformed value (e.g. a non-integer weight). Lines with unrecognised
 -- prefixes are silently ignored, as the spec does not prohibit extra lines.
 --
--- FLP: Implement the rules for all accepted headers.
+-- A lot of copy-pasting.
+-- Only after some tests failed did I figure out that !I! and --- need to be appended to the existing lists.
 parseHeaderLine :: ParsedHeader -> String -> Either String ParsedHeader
 parseHeaderLine hdr line
   | "*** " `isPrefixOf` line =
@@ -222,7 +226,7 @@ parseTestFile tcf content = do
 -- is 'Nothing' (the parser must exit 0, which is implicit and not stored in the
 -- list); if @!C! 0@ was explicit, it is stored as @Just [0]@.
 --
--- FLP: Implement this function.
+-- Just did what the comment wanted me to
 buildExitCodes :: TestCaseType -> ParsedHeader -> (Maybe [Int], Maybe [Int])
 buildExitCodes t p = case t of
   ParseOnly -> (Just (phParserCodes p), Nothing)

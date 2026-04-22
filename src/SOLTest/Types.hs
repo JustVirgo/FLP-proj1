@@ -249,9 +249,7 @@ data FilterSpec = FilterSpec
     fsExcludes :: [FilterCriterion],
     -- | When 'True', criterion values are treated as POSIX regular expressions.
     --
-    -- FLP: If you're not implementing the regex matching bonus extension, you can either
-    -- remove this and update the usages of the datatype throughout the codebase, or you
-    -- can simply fill it with an ignored default value.
+    -- I ignored this value throughout the code.
     fsUseRegex :: Bool
   }
   deriving (Eq, Show)

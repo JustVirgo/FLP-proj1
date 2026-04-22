@@ -32,7 +32,10 @@ import SOLTest.Types
 --
 -- The union of @selected@ and @filteredOut@ always equals the input list.
 --
--- FLP: Implement this function using @matchesAny@ and @matchesCriterion@.
+-- Probably the hardest function for me.
+-- The hardest part was figuring out what should be in selected and what in filteredOut.
+-- After finding out about the partition function, it was easier, since it does about half the work for me.
+-- My first implementation didn't work very well.
 filterTests ::
   FilterSpec ->
   [TestCaseDefinition] ->
@@ -61,9 +64,8 @@ matchesAny useRegex criteria test =
 -- When @useRegex@ is 'True', the criterion value is treated as a POSIX
 -- regular expression matched against the relevant field(s).
 --
--- FLP: Implement this function. If you're not implementing the regex matching
--- bonus extension, you can either remove the first argument and update the usages,
--- or you can simply ignore the value.
+-- Not using the @useRegex@.
+-- Really liked this function; it's simple but powerful, thanks to the 'FilterCriterion' type.
 matchesCriterion :: Bool -> TestCaseDefinition -> FilterCriterion -> Bool
 matchesCriterion useRegex test criterion = a useRegex criterion
   where

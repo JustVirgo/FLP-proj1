@@ -57,9 +57,9 @@ buildReport discovered unexecuted mResults selected foundCount =
 --
 -- The @definitions@ list is used to look up each test's category and points.
 --
--- FLP: Implement this function. The following functions may (or may not) come in handy:
---      @Map.fromList@, @Map.foldlWithKey'@, @Map.empty@, @Map.lookup@, @Map.insertWith@,
---      @Map.map@, @Map.fromList@
+-- Working with maps was a pain.
+-- At the beginning, I used insert into an empty map as a default way to create a map.
+-- Then I found out about fromList and fromListWith, and life was prettier.
 groupByCategory ::
   [TestCaseDefinition] ->
   Map String TestCaseReport ->
@@ -85,7 +85,7 @@ groupByCategory definitions results = Map.fromListWith combine (map toEntry defi
           }
       )
 
-    -- zoskupí tie, čo majú rovnakú kategóriu
+    -- combines those that have the same category
     combine r1 r2 =
       CategoryReport
         { crTotalPoints = crTotalPoints r1 + crTotalPoints r2,
@@ -93,15 +93,15 @@ groupByCategory definitions results = Map.fromListWith combine (map toEntry defi
           crTestResults = Map.union (crTestResults r1) (crTestResults r2)
         }
 
--- Map.insert (tcdCategory (head definitions)) CategoryReport { crTotalPoints = 0, crPassedPoints = 0, crTestResults = Map.empty } Map.empty
-
 -- ---------------------------------------------------------------------------
 -- Statistics
 -- ---------------------------------------------------------------------------
 
 -- | Compute the 'TestStats' from available information.
 --
--- FLP: Implement this function. You'll use @computeHistogram@ here.
+-- It was pretty simple until I got to the tsPassedTests. I didn't know how to calculate that.
+-- A good way to practice foldl, I guess.
+-- The formatting is pretty weird, but Ormolu did that, so blame it.
 computeStats ::
   -- | Total @.test@ files found on disk.
   Int ->
@@ -150,7 +150,8 @@ computeStats foundCount loadedCount selectedCount mCategoryResults =
 -- of categories in each bin is accumulated. All ten bins are always present in
 -- the result, even if their count is 0.
 --
--- FLP: Implement this function.
+-- Creating the map "statically" sounded weird but idk what else to do.
+-- Love the insertWith function.
 computeHistogram :: Map String CategoryReport -> Map String Int
 computeHistogram categories = Map.foldlWithKey' updateHistogram mapWithBins categories
   where

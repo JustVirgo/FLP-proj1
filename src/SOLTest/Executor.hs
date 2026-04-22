@@ -99,7 +99,8 @@ executeExecuteOnly interpPath test =
 
 -- | Execute a 'Combined' test case.
 --
--- FLP: Implement this function. You'll use @withTempSource@ here.
+-- Heavily inspired by executeParseOnly and executeExecuteOnly,
+-- since this function just parses and then runs Interpret if the parsing was successful.
 executeCombined :: FilePath -> FilePath -> TestCaseDefinition -> IO TestCaseReport
 executeCombined parserPath interpPath test = do
   (pexitCode, pOut, pErr) <- runParser parserPath (tcdSourceCode test)
@@ -179,7 +180,7 @@ runDiff actualFile expectedFile = do
 -- Runs diff only when the interpreter exited with code 0 AND a @.out@ file
 -- is present.
 --
--- FLP: Implement this function.
+-- I think the message "Failed successfully" sounds fun. If it doesn't "fail successfully," it's an error.
 checkInterpreterResult ::
   -- | Actual interpreter exit code.
   Int ->
@@ -212,7 +213,7 @@ withTempSource content action =
 -- | Write the interpreter stdout to a temp file and diff it against @.out@.
 -- The file is deleted when the action returns.
 --
--- FLP: Implement this function. It will start similarly to @withTempSource@.
+-- It started out similarly to @withTempSource@, and I finished it.
 runDiffOnOutput :: String -> FilePath -> IO (TestResult, Maybe String)
 runDiffOnOutput iOut outFile =
   withSystemTempFile "stdout-temp.out" $ \tmpPath tmpHandle -> do
@@ -246,8 +247,9 @@ withExecutable (Just path) action = do
 -- The IO action returns 'Nothing' if the file is usable, or 'Just'
 -- an 'UnexecutedReason' describing the problem.
 --
--- FLP: Implement this function. The following functions may come in handy:
---      @doesFileExist@, @getPermissions@, @executable@
+-- At first, I thought @executable@ was a function,
+-- but it turns out to be a field in the record type returned by @getPermissions@.
+-- I hope that CannotExecute is the right code.
 checkExecutable :: FilePath -> IO (Maybe UnexecutedReason)
 checkExecutable path = do
   result <- try (doesFileExist path) :: IO (Either IOException Bool)
